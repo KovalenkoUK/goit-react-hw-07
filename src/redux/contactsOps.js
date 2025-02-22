@@ -1,65 +1,40 @@
-import { configureStore, combineReducers, createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { nanoid } from "nanoid";
+
+const BASE_URL = "https://67b74e132bddacfb270e8635.mockapi.io/contacts";
 
 export const fetchContacts = createAsyncThunk(
-    "contacts/fetchContacts",
-    async () => {
-        const response = await axios.get("/api/contacts");
-        return response.data;
+    "contacts/fetchAll",
+    async (_, thunkAPI) => {
+        try {
+            const response = await axios.get(BASE_URL);
+            return response.data;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error.message);
+        }
     }
 );
 
-export const addNewContact = createAsyncThunk(
-    "contacts/addNewContact",
-    async (newContact) => {
-        const response = await axios.post("/api/contacts", newContact);
-        return response.data;
+export const addContact = createAsyncThunk(
+    "contacts/addContact",
+    async (contact, thunkAPI) => {
+        try {
+            const response = await axios.post(BASE_URL, contact);
+            return response.data;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error.message);
+        }
     }
 );
 
 export const deleteContact = createAsyncThunk(
     "contacts/deleteContact",
-    async (contactId) => {
-        await axios.delete(`/api/contacts/${contactId}`);
-        return contactId;
+    async (id, thunkAPI) => {
+        try {
+            await axios.delete(`${BASE_URL}/${id}`);
+            return id;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error.message);
+        }
     }
 );
-
-const contactsSlice = createSlice({
-    name: "contacts",
-    initialState: {
-        items: [],
-        status: 'idle',
-        error: null
-    },
-    reducers: {},
-    extraReducers: (builder) => {
-        builder
-            .addCase(fetchContacts.pending, (state) => {
-                state.status = 'loading';
-            })
-            .addCase(fetchContacts.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                state.items = action.payload;
-            })
-            .addCase(fetchContacts.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.error.message;
-            })
-            .addCase(addNewContact.fulfilled, (state, action) => {
-                state.items.push(action.payload);
-            })
-            .addCase(deleteContact.fulfilled, (state, action) => {
-                state.items = state.items.filter(contact => contact.id !== action.payload);
-            });
-    }
-});
-
-const rootReducer = combineReducers({
-    contacts: contactsSlice.reducer,
-});
-
-export const store = configureStore({
-    reducer: rootReducer,
-});
